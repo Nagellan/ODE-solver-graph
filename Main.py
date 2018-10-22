@@ -2,89 +2,93 @@ import math
 import matplotlib.pyplot as plt
 
 
-def euler_method(x0, y0, xn, h, f):
-    xs = [x0]
-    ys = [y0]
-
-    while xs[-1] < xn:
-        y = ys[-1] + h*f(xs[-1], ys[-1])
-        x = xs[-1] + h
-        ys.append(y)
-        xs.append(x)
-
-    return xs, ys
+class DiffEquation:
+    def __init__(self, x0, y0, xn, h, f, formula):
+        self.x0 = x0
+        self.y0 = y0
+        self.xn = xn
+        self.h = h
+        self.f = f
+        self.formula = formula
 
 
-def mod_euler_method(x0, y0, xn, h, f):
-    xs = [x0]
-    ys = [y0]
+class Solver:
+    x0 = 0
+    y0 = 0
+    xn = 0
+    h = 0
+    f = None
 
-    while xs[-1] < xn:
-        x = xs[-1] + h
-        k1 = f(xs[-1], ys[-1])
-        k2 = f(x, ys[-1] + h*k1)
-        y = ys[-1] + h*((k1 + k2)/2)
-        ys.append(y)
-        xs.append(x)
+    def solve(self, diff_eq, method):
+        self.x0 = diff_eq.x0
+        self.y0 = diff_eq.y0
+        self.xn = diff_eq.xn
+        self.h = diff_eq.h
+        self.f = diff_eq.f
 
-    return xs, ys
+        return method()
+
+    def euler_method(self):
+        xs = [self.x0]
+        ys = [self.y0]
+
+        while xs[-1] < self.xn:
+            y = ys[-1] + self.h*self.f(xs[-1], ys[-1])
+            x = xs[-1] + self.h
+            ys.append(y)
+            xs.append(x)
+
+        return xs, ys, "Euler method, h = "
+
+    def mod_euler_method(self):
+        xs = [self.x0]
+        ys = [self.y0]
+
+        while xs[-1] < self.xn:
+            x = xs[-1] + self.h
+            k1 = self.f(xs[-1], ys[-1])
+            k2 = self.f(x, ys[-1] + self.h*k1)
+            y = ys[-1] + self.h*((k1 + k2)/2)
+            ys.append(y)
+            xs.append(x)
+
+        return xs, ys, "Modified Euler method, h = "
+
+    def runge_kutta(self):
+        xs = [self.x0]
+        ys = [self.y0]
+
+        while xs[-1] < self.xn:
+            k1 = self.h*self.f(xs[-1], ys[-1])
+            k2 = self.h*self.f(xs[-1] + self.h/2, ys[-1] + k1/2)
+            k3 = self.h*self.f(xs[-1] + self.h/2, ys[-1] + k2/2)
+            k4 = self.h*self.f(xs[-1] + self.h, ys[-1] + k3)
+            xs.append(xs[-1] + self.h)
+            ys.append(ys[-1] + k1/6 + k2/3 + k3/3 + k4/6)
+
+        return xs, ys, "Runge Kutta method"
 
 
-def runge_kutta(x0, y0, xn, h, f):
-    xs = [x0]
-    ys = [y0]
+def plot(m1, m2, m3, diff_eq):
+    plt.plot(m1[0], m1[1], label=m1[2])
+    plt.plot(m2[0], m2[1], label=m2[2])
+    plt.plot(m3[0], m3[1], label=m3[2])
 
-    while xs[-1] < xn:
-        k1 = h*f(xs[-1], ys[-1])
-        k2 = h*f(xs[-1] + h/2, ys[-1] + k1/2)
-        k3 = h*f(xs[-1] + h/2, ys[-1] + k2/2)
-        k4 = h*f(xs[-1] + h, ys[-1] + k3)
-        xs.append(xs[-1] + h)
-        ys.append(ys[-1] + k1/6 + k2/3 + k3/3 + k4/6)
-
-    return xs, ys
-
-
-def plot(d1, d2, d3, d4, d5, d6, formula):
-    plt.plot(d1[0], d1[1], label="Euler, h = 0.1")
-    plt.plot(d2[0], d2[1], label="Euler, h = 0.05")
-    plt.plot(d3[0], d3[1], label="Modified-Euler, h = 0.1")
-    plt.plot(d4[0], d4[1], label="Modified-Euler, h = 0.05")
-    plt.plot(d5[0], d5[1], label="Runge-Kutta, h = 0.1")
-    plt.plot(d6[0], d6[1], label="Runge-Kutta, h = 0.05")
-
-    plt.title(formula)
-    plt.axis([min(d1[0]), max(d1[0]), min(d1[1]), max(d1[1])])
+    plt.title(diff_eq.formula + ", h = " + str(diff_eq.h))
+    plt.axis([min(m1[0]), max(m1[0]), min(m1[1]), max(m1[1])])
     plt.legend()
     plt.show()
 
 
-def diff_1(x, y):
-    return 2*x*x + 3*y*y - 2
+def var_15_func(x, y):
+    return 3*x*math.e - y*(1 - 1/x)
 
 
-def diff_2(x, y):
-    return y + math.sqrt(x*x + y*y)
+var_15 = DiffEquation(1, 0, 5, 1, var_15_func, "y' = 3xe^x - y(1 - 1/x)")
+solver = Solver()
 
+m1 = solver.solve(var_15, solver.euler_method)
+m2 = solver.solve(var_15, solver.mod_euler_method)
+m3 = solver.solve(var_15, solver.runge_kutta)
 
-def diff_3(x, y):
-    return x*x - 3*x*y + y*y - 3*y
-
-
-def diff_4(x, y):
-    return (1 + x)/(1 - y*y)
-
-
-diffs = [{"formula": "y' = 2x^2 + 3y^2 - 2",      "x0": 2, "y0": 1, "xn": 3, "func": diff_1},
-         {"formula": "y' = y + sqrt(x^2 + y^2)",  "x0": 0, "y0": 1, "xn": 1, "func": diff_2},
-         {"formula": "y' + 3y = x^2 - 3xy + y^2", "x0": 0, "y0": 2, "xn": 1, "func": diff_3},
-         {"formula": "y' = (1 + x)/(1 - y^2)",    "x0": 2, "y0": 3, "xn": 3, "func": diff_4}]
-
-for diff in diffs:
-    d1 = euler_method(diff["x0"],     diff["y0"], diff["xn"], 0.1,  diff["func"])
-    d2 = euler_method(diff["x0"],     diff["y0"], diff["xn"], 0.05, diff["func"])
-    d3 = mod_euler_method(diff["x0"], diff["y0"], diff["xn"], 0.1,  diff["func"])
-    d4 = mod_euler_method(diff["x0"], diff["y0"], diff["xn"], 0.05, diff["func"])
-    d5 = runge_kutta(diff["x0"],      diff["y0"], diff["xn"], 0.1,  diff["func"])
-    d6 = runge_kutta(diff["x0"],      diff["y0"], diff["xn"], 0.05, diff["func"])
-    plot(d1, d2, d3, d4, d5, d6, diff["formula"])
+plot(m1, m2, m3, var_15)
