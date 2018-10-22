@@ -59,18 +59,6 @@ def plot(d1, d2, d3, d4, d5, d6, formula):
     plt.show()
 
 
-def print_table(diffs1, diffs2, formula):
-    print("\n\n  ", formula, "\n|--------------------------------|")
-    print("|  x  |   T1   |   T3   |   T5   |")
-    # for coords in diffs1:
-    #     for i in range(coords[0][0], coords[0][-1]):
-    #         print('%0.2f' % coords[0][i], " ")
-    # print("|  x  |  T2  |  T4  |  T6  |")
-    # print()
-    # for coords in diffs2:
-    #     print('%0.2f' % coords[0], " ")
-
-
 def diff_1(x, y):
     return 2*x*x + 3*y*y - 2
 
@@ -100,4 +88,3 @@ for diff in diffs:
     d5 = runge_kutta(diff["x0"],      diff["y0"], diff["xn"], 0.1,  diff["func"])
     d6 = runge_kutta(diff["x0"],      diff["y0"], diff["xn"], 0.05, diff["func"])
     plot(d1, d2, d3, d4, d5, d6, diff["formula"])
-    print_table([d1, d3, d5], [d2, d4, d6], diff["formula"])
