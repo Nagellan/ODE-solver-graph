@@ -1,6 +1,10 @@
 import math
 import numpy
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
 from tkinter import *
 from tkinter import ttk
 
@@ -95,7 +99,7 @@ def ode_func(x, y):
 
 
 def ode_exact_sol(x):
-    return 3/2*x*(math.e**x - math.e**(2-x))
+    return 3/2*x*(math.e**x - math.e**(2 - x))
 
 
 diff_eq = DiffEquation(1, 0, 5, 0.1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
@@ -164,11 +168,22 @@ nb = ttk.Notebook(graph_area)
 nb.pack(fill='both', expand='yes')
 
 page_1 = Frame(graph_area, width=750, height=520)
-page_2 = Frame(graph_area, width=750, height=520)
+# -----------
+f = Figure(figsize=(5, 5), dpi=100)
+a = f.add_subplot(111)
+a.plot([1, 2, 3, 4, 5, 6, 7, 8], [5, 6, 1, 3, 8, 9, 3, 5])
 
+canvas = FigureCanvasTkAgg(f, page_1)
+canvas.draw()
+canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+
+toolbar = NavigationToolbar2Tk(canvas, page_1)
+toolbar.update()
+canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
+# ------------
+page_2 = Frame(graph_area, width=750, height=520)
 nb.add(page_1, text='Solutions')
 nb.add(page_2, text='Errors')
-
 
 root.bind('<Return>', plot2)    # action on pressing 'Enter'
 
