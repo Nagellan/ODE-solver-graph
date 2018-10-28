@@ -1,6 +1,8 @@
 import math
 import numpy
 import matplotlib.pyplot as plt
+from tkinter import *
+from tkinter import ttk
 
 
 class DiffEquation:
@@ -104,4 +106,39 @@ m1 = solver.solve(diff_eq, Euler())
 m2 = solver.solve(diff_eq, ModEuler())
 m3 = solver.solve(diff_eq, RungeKutta())
 
-plot(m0, m1, m2, m3, diff_eq)
+# plot(m0, m1, m2, m3, diff_eq)
+
+
+def plot2():
+    try:
+        pass
+    except ValueError:
+        pass
+
+
+root = Tk()
+root.title("ODE Solver")
+
+control_panel = ttk.Frame(root, padding="15", width=1000)
+control_panel.grid(column=0, row=0, sticky=(N, W, E, S))
+
+ttk.Label(control_panel, text="x0").grid(column=0, row=0, sticky=(W, E))
+ttk.Entry(control_panel).grid(column=1, row=0, sticky=(W, E))
+
+ttk.Label(control_panel, text="y0").grid(column=0, row=1, sticky=(W, E))
+ttk.Entry(control_panel).grid(column=1, row=1, sticky=(W, E))
+
+ttk.Label(control_panel, text="xn").grid(column=0, row=2, sticky=(W, E))
+ttk.Entry(control_panel).grid(column=1, row=2, sticky=(W, E))
+
+ttk.Label(control_panel, text="h").grid(column=0, row=3, sticky=(W, E))
+ttk.Entry(control_panel).grid(column=1, row=3, sticky=(W, E))
+
+ttk.Button(control_panel, text="Plot", command=plot2).grid(column=0, columnspan=2, row=5, sticky=(W, E))
+
+for child in control_panel.winfo_children():
+    child.grid_configure(padx=5, pady=5)
+
+root.bind('<Return>', plot2)
+
+root.mainloop()
