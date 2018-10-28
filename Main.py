@@ -15,7 +15,12 @@ class DiffEquation:
 
 
 class Method:
-    def exact(self, diff_eq):
+    def start(self, diff_eq):
+        pass
+
+
+class Exact(Method):
+    def start(self, diff_eq):
         xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
         ys = [diff_eq.y0]
 
@@ -25,7 +30,9 @@ class Method:
 
         return xs, ys, "Exact solution"
 
-    def euler(self, diff_eq):
+
+class Euler(Method):
+    def start(self, diff_eq):
         xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
         ys = [diff_eq.y0]
 
@@ -35,7 +42,9 @@ class Method:
 
         return xs, ys, "Euler method"
 
-    def mod_euler(self, diff_eq):
+
+class ModEuler(Method):
+    def start(self, diff_eq):
         xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
         ys = [diff_eq.y0]
 
@@ -47,7 +56,9 @@ class Method:
 
         return xs, ys, "Modified Euler method"
 
-    def runge_kutta(self, diff_eq):
+
+class RungeKutta(Method):
+    def start(self, diff_eq):
         xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
         ys = [diff_eq.y0]
 
@@ -61,9 +72,9 @@ class Method:
         return xs, ys, "Runge Kutta method"
 
 
-class ODEsolver:
+class ODESolver:
     def solve(self, diff_eq, method):
-        return method(diff_eq)
+        return method.start(diff_eq)
 
 
 def plot(m0, m1, m2, m3, diff_eq):
@@ -86,12 +97,11 @@ def ode_exact_sol(x):
 
 
 diff_eq = DiffEquation(1, 0, 5, 0.1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
-solver = ODEsolver()
-method = Method()
+solver = ODESolver()
 
-m0 = solver.solve(diff_eq, method.exact)
-m1 = solver.solve(diff_eq, method.euler)
-m2 = solver.solve(diff_eq, method.mod_euler)
-m3 = solver.solve(diff_eq, method.runge_kutta)
+m0 = solver.solve(diff_eq, Exact())
+m1 = solver.solve(diff_eq, Euler())
+m2 = solver.solve(diff_eq, ModEuler())
+m3 = solver.solve(diff_eq, RungeKutta())
 
 plot(m0, m1, m2, m3, diff_eq)
