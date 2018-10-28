@@ -1,4 +1,5 @@
 import math
+import numpy
 import matplotlib.pyplot as plt
 
 
@@ -15,60 +16,49 @@ class DiffEquation:
 
 class Method:
     def exact(self, diff_eq):
-        xs = [diff_eq.x0]
+        xs = numpy.arange(diff_eq.x0 + diff_eq.h, diff_eq.xn + diff_eq.h, diff_eq.h)
         ys = [diff_eq.y0]
 
-        while xs[-1] < diff_eq.xn:
-            y = diff_eq.exact_sol(xs[-1])
-            x = xs[-1] + diff_eq.h
-
+        for x in xs:
+            y = diff_eq.exact_sol(x)
             ys.append(y)
-            xs.append(x)
 
-        return xs, ys, "Exact solution"
+        return numpy.append(diff_eq.x0, xs), ys, "Exact solution"
 
     def euler(self, diff_eq):
-        xs = [diff_eq.x0]
+        xs = numpy.arange(diff_eq.x0 + diff_eq.h, diff_eq.xn + diff_eq.h, diff_eq.h)
         ys = [diff_eq.y0]
 
-        while xs[-1] < diff_eq.xn:
-            y = ys[-1] + diff_eq.h*diff_eq.f(xs[-1], ys[-1])
-            x = xs[-1] + diff_eq.h
-
+        for x in xs:
+            y = ys[-1] + diff_eq.h*diff_eq.f(x, ys[-1])
             ys.append(y)
-            xs.append(x)
 
-        return xs, ys, "Euler method"
+        return numpy.append(diff_eq.x0, xs), ys, "Euler method"
 
     def mod_euler(self, diff_eq):
-        xs = [diff_eq.x0]
+        xs = numpy.arange(diff_eq.x0 + diff_eq.h, diff_eq.xn + diff_eq.h, diff_eq.h)
         ys = [diff_eq.y0]
 
-        while xs[-1] < diff_eq.xn:
-            x = xs[-1] + diff_eq.h
-            k1 = diff_eq.f(xs[-1], ys[-1])
-            k2 = diff_eq.f(x, ys[-1] + diff_eq.h*k1)
+        for x in xs:
+            k1 = diff_eq.f(x, ys[-1])
+            k2 = diff_eq.f(x + diff_eq.h, ys[-1] + diff_eq.h*k1)
             y = ys[-1] + diff_eq.h*((k1 + k2)/2)
-
             ys.append(y)
-            xs.append(x)
 
-        return xs, ys, "Modified Euler method"
+        return numpy.append(diff_eq.x0, xs), ys, "Modified Euler method"
 
     def runge_kutta(self, diff_eq):
-        xs = [diff_eq.x0]
+        xs = numpy.arange(diff_eq.x0 + diff_eq.h, diff_eq.xn + diff_eq.h, diff_eq.h)
         ys = [diff_eq.y0]
 
-        while xs[-1] < diff_eq.xn:
-            k1 = diff_eq.h*diff_eq.f(xs[-1], ys[-1])
-            k2 = diff_eq.h*diff_eq.f(xs[-1] + diff_eq.h/2, ys[-1] + k1/2)
-            k3 = diff_eq.h*diff_eq.f(xs[-1] + diff_eq.h/2, ys[-1] + k2/2)
-            k4 = diff_eq.h*diff_eq.f(xs[-1] + diff_eq.h, ys[-1] + k3)
-
-            xs.append(xs[-1] + diff_eq.h)
+        for x in xs:
+            k1 = diff_eq.h*diff_eq.f(x, ys[-1])
+            k2 = diff_eq.h*diff_eq.f(x + diff_eq.h/2, ys[-1] + k1/2)
+            k3 = diff_eq.h*diff_eq.f(x + diff_eq.h/2, ys[-1] + k2/2)
+            k4 = diff_eq.h*diff_eq.f(x + diff_eq.h, ys[-1] + k3)
             ys.append(ys[-1] + k1/6 + k2/3 + k3/3 + k4/6)
 
-        return xs, ys, "Runge Kutta method"
+        return numpy.append(diff_eq.x0, xs), ys, "Runge Kutta method"
 
 
 class ODEsolver:
@@ -95,7 +85,7 @@ def ode_exact_sol(x):
     return 3/2*x*(math.e**x - math.e**(2-x))
 
 
-diff_eq = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
+diff_eq = DiffEquation(1, 0, 5, 0.1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
 solver = ODEsolver()
 method = Method()
 
