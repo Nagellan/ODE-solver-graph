@@ -182,6 +182,18 @@ toolbar.update()
 canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
 # ------------
 page_2 = Frame(graph_area, width=750, height=520)
+f2 = Figure(figsize=(5, 5), dpi=100)
+b = f2.add_subplot(111)
+b.plot([1, 2, 3, 4, 5, 6, 7, 8], [5, 6, 1, 3, 8, 9, 3, 5])
+
+canvas = FigureCanvasTkAgg(f2, page_2)
+canvas.draw()
+canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+
+toolbar = NavigationToolbar2Tk(canvas, page_2)
+toolbar.update()
+canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
+# ------------
 nb.add(page_1, text='Solutions')
 nb.add(page_2, text='Errors')
 
