@@ -83,6 +83,113 @@ class ODESolver:
         return method.start(diff_eq)
 
 
+class ODESolverApp:
+    def __init__(self, diff_eq, m0, m1, m2, m3):
+        root = Tk()
+        root.title("ODE Solver")
+        root.resizable(width=False, height=False)
+        root.geometry('1000x600')
+        # root.iconbitmap(default="graph-img.gif")
+
+        self.root = root
+
+        self.draw_control_panel(diff_eq)
+        self.draw_graph_area(m0, m1, m2, m3)
+
+        root.mainloop()
+
+    def update(*args):
+        try:
+            pass
+        except ValueError:
+            pass
+
+    def draw_control_panel(self, diff_eq):
+        control_panel = ttk.Frame(self.root, padding="15")
+        control_panel.grid(column=0, row=0, sticky=(N, W, E, S))
+
+        ttk.Label(control_panel, text="x0")
+        entry_x0 = ttk.Entry(control_panel)
+        entry_x0.insert(END, diff_eq.x0)
+
+        ttk.Label(control_panel, text="y0")
+        entry_y0 = ttk.Entry(control_panel)
+        entry_y0.insert(END, diff_eq.y0)
+
+        ttk.Label(control_panel, text="xn")
+        entry_xn = ttk.Entry(control_panel)
+        entry_xn.insert(END, diff_eq.xn)
+
+        ttk.Label(control_panel, text="h")
+        entry_h = ttk.Entry(control_panel)
+        entry_h.insert(END, diff_eq.h)
+
+        ttk.Button(control_panel, text="Plot", command=self.update).grid(column=0, columnspan=2, row=5, sticky=(W, E))
+
+        i = 0
+        for child in control_panel.winfo_children():
+            child.grid_configure(padx=5, pady=5)
+            if isinstance(child, ttk.Label):
+                child.grid(column=0, row=i, sticky=(W, E))
+            if isinstance(child, ttk.Entry):
+                child.config(justify=CENTER)
+                child.grid(column=1, row=i, sticky=(W, E))
+                i = i + 1
+
+        self.root.bind('<Return>', self.update)  # action on pressing 'Enter'
+
+    def draw_graph_area(self, m0, m1, m2, m3):
+        graph_area = ttk.Frame(self.root, padding="15", width=800, height=600)
+        graph_area.grid(column=1, row=0, sticky=(N, W, E, S))
+
+        nb = ttk.Notebook(graph_area)
+        nb.pack(fill='both', expand='yes')
+
+        tab_1 = self.create_tab_1(graph_area, m0, m1, m2, m3)
+        tab_2 = self.create_tab_2(graph_area, m0, m1, m2, m3)
+
+        nb.add(tab_1, text='Solutions')
+        nb.add(tab_2, text='Errors')
+
+    def create_tab_1(self, graph_area, m0, m1, m2, m3):
+        tab = Frame(graph_area, width=750, height=520)
+
+        fig = Figure(figsize=(5, 5), dpi=100)
+        graph = fig.add_subplot(111)
+        graph.plot(m0[0], m0[1])
+        graph.plot(m1[0], m1[1])
+        graph.plot(m2[0], m2[1])
+        graph.plot(m3[0], m3[1])
+
+        canvas = FigureCanvasTkAgg(fig, tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+
+        toolbar = NavigationToolbar2Tk(canvas, tab)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
+
+        return tab
+
+    def create_tab_2(self, graph_area, m0, m1, m2, m3):
+        tab = Frame(graph_area, width=750, height=520)
+        fig = Figure(figsize=(5, 5), dpi=100)
+        graph = fig.add_subplot(111)
+        graph.plot(m1[0], numpy.array(m1[1] - numpy.array(m0[1])))
+        graph.plot(m2[0], numpy.array(m2[1] - numpy.array(m0[1])))
+        graph.plot(m3[0], numpy.array(m3[1] - numpy.array(m0[1])))
+
+        canvas = FigureCanvasTkAgg(fig, tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+
+        toolbar = NavigationToolbar2Tk(canvas, tab)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
+
+        return tab
+
+
 def plot(m0, m1, m2, m3, diff_eq):
     plt.plot(m0[0], m0[1], label=m0[2])
     plt.plot(m1[0], m1[1], label=m1[2])
@@ -102,7 +209,7 @@ def ode_exact_sol(x):
     return 3/2*x*(math.e**x - math.e**(2 - x))
 
 
-diff_eq = DiffEquation(1, 0, 5, 0.1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
+diff_eq = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
 solver = ODESolver()
 
 m0 = solver.solve(diff_eq, Exact())
@@ -112,91 +219,4 @@ m3 = solver.solve(diff_eq, RungeKutta())
 
 # plot(m0, m1, m2, m3, diff_eq)
 
-
-def plot2(*args):
-    try:
-        x0 = entry_x0.get()
-        y0 = entry_y0.get()
-        xn = entry_xn.get()
-        h = entry_h.get()
-
-        print(x0, y0, xn, h)
-    except ValueError:
-        pass
-
-
-root = Tk()
-root.title("ODE Solver")
-root.resizable(width=False, height=False)
-root.geometry('1000x600')
-
-control_panel = ttk.Frame(root, padding="15")
-control_panel.grid(column=0, row=0, sticky=(N, W, E, S))
-
-ttk.Label(control_panel, text="x0")
-entry_x0 = ttk.Entry(control_panel)
-entry_x0.insert(END, '1')
-
-ttk.Label(control_panel, text="y0")
-entry_y0 = ttk.Entry(control_panel)
-entry_y0.insert(END, '0')
-
-ttk.Label(control_panel, text="xn")
-entry_xn = ttk.Entry(control_panel)
-entry_xn.insert(END, '5')
-
-ttk.Label(control_panel, text="h")
-entry_h = ttk.Entry(control_panel)
-entry_h.insert(END, '0.1')
-
-ttk.Button(control_panel, text="Plot", command=plot2).grid(column=0, columnspan=2, row=5, sticky=(W, E))
-
-i = 0
-for child in control_panel.winfo_children():
-    child.grid_configure(padx=5, pady=5)
-    if isinstance(child, ttk.Label):
-        child.grid(column=0, row=i, sticky=(W, E))
-    if isinstance(child, ttk.Entry):
-        child.config(justify=CENTER)
-        child.grid(column=1, row=i, sticky=(W, E))
-        i = i + 1
-
-graph_area = ttk.Frame(root, padding="15", width=800, height=600)
-graph_area.grid(column=1, row=0, sticky=(N, W, E, S))
-
-nb = ttk.Notebook(graph_area)
-nb.pack(fill='both', expand='yes')
-
-page_1 = Frame(graph_area, width=750, height=520)
-# -----------
-f = Figure(figsize=(5, 5), dpi=100)
-a = f.add_subplot(111)
-a.plot([1, 2, 3, 4, 5, 6, 7, 8], [5, 6, 1, 3, 8, 9, 3, 5])
-
-canvas = FigureCanvasTkAgg(f, page_1)
-canvas.draw()
-canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
-
-toolbar = NavigationToolbar2Tk(canvas, page_1)
-toolbar.update()
-canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
-# ------------
-page_2 = Frame(graph_area, width=750, height=520)
-f2 = Figure(figsize=(5, 5), dpi=100)
-b = f2.add_subplot(111)
-b.plot([1, 2, 3, 4, 5, 6, 7, 8], [5, 6, 1, 3, 8, 9, 3, 5])
-
-canvas = FigureCanvasTkAgg(f2, page_2)
-canvas.draw()
-canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
-
-toolbar = NavigationToolbar2Tk(canvas, page_2)
-toolbar.update()
-canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
-# ------------
-nb.add(page_1, text='Solutions')
-nb.add(page_2, text='Errors')
-
-root.bind('<Return>', plot2)    # action on pressing 'Enter'
-
-root.mainloop()
+ODESolverApp(diff_eq, m0, m1, m2, m3)
