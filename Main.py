@@ -12,61 +12,54 @@ class DiffEquation:
         self.formula = formula
 
 
-class Solver:
-    x0 = 0
-    y0 = 0
-    xn = 0
-    h = 0
-    f = None
+class Method:
+    def euler(self, diff_eq):
+        xs = [diff_eq.x0]
+        ys = [diff_eq.y0]
 
-    def solve(self, diff_eq, method):
-        self.x0 = diff_eq.x0
-        self.y0 = diff_eq.y0
-        self.xn = diff_eq.xn
-        self.h = diff_eq.h
-        self.f = diff_eq.f
+        while xs[-1] < diff_eq.xn:
+            y = ys[-1] + diff_eq.h*diff_eq.f(xs[-1], ys[-1])
+            x = xs[-1] + diff_eq.h
 
-        return method()
-
-    def euler_method(self):
-        xs = [self.x0]
-        ys = [self.y0]
-
-        while xs[-1] < self.xn:
-            y = ys[-1] + self.h*self.f(xs[-1], ys[-1])
-            x = xs[-1] + self.h
             ys.append(y)
             xs.append(x)
 
-        return xs, ys, "Euler method, h = "
+        return xs, ys, "Euler method"
 
-    def mod_euler_method(self):
-        xs = [self.x0]
-        ys = [self.y0]
+    def mod_euler(self, diff_eq):
+        xs = [diff_eq.x0]
+        ys = [diff_eq.y0]
 
-        while xs[-1] < self.xn:
-            x = xs[-1] + self.h
-            k1 = self.f(xs[-1], ys[-1])
-            k2 = self.f(x, ys[-1] + self.h*k1)
-            y = ys[-1] + self.h*((k1 + k2)/2)
+        while xs[-1] < diff_eq.xn:
+            x = xs[-1] + diff_eq.h
+            k1 = diff_eq.f(xs[-1], ys[-1])
+            k2 = diff_eq.f(x, ys[-1] + diff_eq.h*k1)
+            y = ys[-1] + diff_eq.h*((k1 + k2)/2)
+
             ys.append(y)
             xs.append(x)
 
-        return xs, ys, "Modified Euler method, h = "
+        return xs, ys, "Modified Euler method"
 
-    def runge_kutta(self):
-        xs = [self.x0]
-        ys = [self.y0]
+    def runge_kutta(self, diff_eq):
+        xs = [diff_eq.x0]
+        ys = [diff_eq.y0]
 
-        while xs[-1] < self.xn:
-            k1 = self.h*self.f(xs[-1], ys[-1])
-            k2 = self.h*self.f(xs[-1] + self.h/2, ys[-1] + k1/2)
-            k3 = self.h*self.f(xs[-1] + self.h/2, ys[-1] + k2/2)
-            k4 = self.h*self.f(xs[-1] + self.h, ys[-1] + k3)
-            xs.append(xs[-1] + self.h)
+        while xs[-1] < diff_eq.xn:
+            k1 = diff_eq.h*diff_eq.f(xs[-1], ys[-1])
+            k2 = diff_eq.h*diff_eq.f(xs[-1] + diff_eq.h/2, ys[-1] + k1/2)
+            k3 = diff_eq.h*diff_eq.f(xs[-1] + diff_eq.h/2, ys[-1] + k2/2)
+            k4 = diff_eq.h*diff_eq.f(xs[-1] + diff_eq.h, ys[-1] + k3)
+
+            xs.append(xs[-1] + diff_eq.h)
             ys.append(ys[-1] + k1/6 + k2/3 + k3/3 + k4/6)
 
         return xs, ys, "Runge Kutta method"
+
+
+class ODEsolver:
+    def solve(self, diff_eq, method):
+        return method(diff_eq)
 
 
 def plot(m1, m2, m3, diff_eq):
@@ -80,15 +73,16 @@ def plot(m1, m2, m3, diff_eq):
     plt.show()
 
 
-def var_15_func(x, y):
+def function_15(x, y):
     return 3*x*math.e - y*(1 - 1/x)
 
 
-var_15 = DiffEquation(1, 0, 5, 1, var_15_func, "y' = 3xe^x - y(1 - 1/x)")
-solver = Solver()
+ode_15 = DiffEquation(1, 0, 5, 1, function_15, "y' = 3xe^x - y(1 - 1/x)")
+solver = ODEsolver()
+method = Method()
 
-m1 = solver.solve(var_15, solver.euler_method)
-m2 = solver.solve(var_15, solver.mod_euler_method)
-m3 = solver.solve(var_15, solver.runge_kutta)
+m1 = solver.solve(ode_15, method.euler)
+m2 = solver.solve(ode_15, method.mod_euler)
+m3 = solver.solve(ode_15, method.runge_kutta)
 
-plot(m1, m2, m3, var_15)
+plot(m1, m2, m3, ode_15)
