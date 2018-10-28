@@ -3,16 +3,30 @@ import matplotlib.pyplot as plt
 
 
 class DiffEquation:
-    def __init__(self, x0, y0, xn, h, f, formula):
+    def __init__(self, x0, y0, xn, h, f, exact_sol, formula):
         self.x0 = x0
         self.y0 = y0
         self.xn = xn
         self.h = h
         self.f = f
+        self.exact_sol = exact_sol
         self.formula = formula
 
 
 class Method:
+    def exact(self, diff_eq):
+        xs = [diff_eq.x0]
+        ys = [diff_eq.y0]
+
+        while xs[-1] < diff_eq.xn:
+            y = diff_eq.exact_sol(xs[-1])
+            x = xs[-1] + diff_eq.h
+
+            ys.append(y)
+            xs.append(x)
+
+        return xs, ys, "Exact solution"
+
     def euler(self, diff_eq):
         xs = [diff_eq.x0]
         ys = [diff_eq.y0]
@@ -62,27 +76,32 @@ class ODEsolver:
         return method(diff_eq)
 
 
-def plot(m1, m2, m3, diff_eq):
+def plot(m0, m1, m2, m3, diff_eq):
+    plt.plot(m0[0], m0[1], label=m0[2])
     plt.plot(m1[0], m1[1], label=m1[2])
     plt.plot(m2[0], m2[1], label=m2[2])
     plt.plot(m3[0], m3[1], label=m3[2])
 
     plt.title(diff_eq.formula + ", h = " + str(diff_eq.h))
-    plt.axis([min(m1[0]), max(m1[0]), min(m1[1]), max(m1[1])])
     plt.legend()
     plt.show()
 
 
-def function_15(x, y):
-    return 3*x*math.e - y*(1 - 1/x)
+def ode_func(x, y):
+    return 3*x*math.e**x - y*(1 - 1/x)
 
 
-ode_15 = DiffEquation(1, 0, 5, 1, function_15, "y' = 3xe^x - y(1 - 1/x)")
+def ode_exact_sol(x):
+    return 3/2*x*(math.e**x - math.e**(2-x))
+
+
+diff_eq = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
 solver = ODEsolver()
 method = Method()
 
-m1 = solver.solve(ode_15, method.euler)
-m2 = solver.solve(ode_15, method.mod_euler)
-m3 = solver.solve(ode_15, method.runge_kutta)
+m0 = solver.solve(diff_eq, method.exact)
+m1 = solver.solve(diff_eq, method.euler)
+m2 = solver.solve(diff_eq, method.mod_euler)
+m3 = solver.solve(diff_eq, method.runge_kutta)
 
-plot(m1, m2, m3, ode_15)
+plot(m0, m1, m2, m3, diff_eq)
