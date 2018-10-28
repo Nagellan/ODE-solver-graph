@@ -109,36 +109,67 @@ m3 = solver.solve(diff_eq, RungeKutta())
 # plot(m0, m1, m2, m3, diff_eq)
 
 
-def plot2():
+def plot2(*args):
     try:
-        pass
+        x0 = entry_x0.get()
+        y0 = entry_y0.get()
+        xn = entry_xn.get()
+        h = entry_h.get()
+
+        print(x0, y0, xn, h)
     except ValueError:
         pass
 
 
 root = Tk()
 root.title("ODE Solver")
+root.resizable(width=False, height=False)
+root.geometry('1000x600')
 
-control_panel = ttk.Frame(root, padding="15", width=1000)
+control_panel = ttk.Frame(root, padding="15")
 control_panel.grid(column=0, row=0, sticky=(N, W, E, S))
 
-ttk.Label(control_panel, text="x0").grid(column=0, row=0, sticky=(W, E))
-ttk.Entry(control_panel).grid(column=1, row=0, sticky=(W, E))
+ttk.Label(control_panel, text="x0")
+entry_x0 = ttk.Entry(control_panel)
+entry_x0.insert(END, '1')
 
-ttk.Label(control_panel, text="y0").grid(column=0, row=1, sticky=(W, E))
-ttk.Entry(control_panel).grid(column=1, row=1, sticky=(W, E))
+ttk.Label(control_panel, text="y0")
+entry_y0 = ttk.Entry(control_panel)
+entry_y0.insert(END, '0')
 
-ttk.Label(control_panel, text="xn").grid(column=0, row=2, sticky=(W, E))
-ttk.Entry(control_panel).grid(column=1, row=2, sticky=(W, E))
+ttk.Label(control_panel, text="xn")
+entry_xn = ttk.Entry(control_panel)
+entry_xn.insert(END, '5')
 
-ttk.Label(control_panel, text="h").grid(column=0, row=3, sticky=(W, E))
-ttk.Entry(control_panel).grid(column=1, row=3, sticky=(W, E))
+ttk.Label(control_panel, text="h")
+entry_h = ttk.Entry(control_panel)
+entry_h.insert(END, '0.1')
 
 ttk.Button(control_panel, text="Plot", command=plot2).grid(column=0, columnspan=2, row=5, sticky=(W, E))
 
+i = 0
 for child in control_panel.winfo_children():
     child.grid_configure(padx=5, pady=5)
+    if isinstance(child, ttk.Label):
+        child.grid(column=0, row=i, sticky=(W, E))
+    if isinstance(child, ttk.Entry):
+        child.config(justify=CENTER)
+        child.grid(column=1, row=i, sticky=(W, E))
+        i = i + 1
 
-root.bind('<Return>', plot2)
+graph_area = ttk.Frame(root, padding="15", width=800, height=600)
+graph_area.grid(column=1, row=0, sticky=(N, W, E, S))
+
+nb = ttk.Notebook(graph_area)
+nb.pack(fill='both', expand='yes')
+
+page_1 = Frame(graph_area, width=750, height=520)
+page_2 = Frame(graph_area, width=750, height=520)
+
+nb.add(page_1, text='Solutions')
+nb.add(page_2, text='Errors')
+
+
+root.bind('<Return>', plot2)    # action on pressing 'Enter'
 
 root.mainloop()
