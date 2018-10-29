@@ -81,96 +81,112 @@ class ODESolver:
         return method.start(diff_eq)
 
 
-class ODESolverApp:
-    def __init__(self, diff_eq):
+class MainWindow:
+    def create(self):
         root = Tk()
+
         root.title("ODE Solver")
         root.resizable(width=False, height=False)
         root.iconbitmap(default="favicon.ico")
 
+        return root
+
+
+class ControlPanel:
+    def __init__(self, root, diff_eq, solver, method):
         self.root = root
+        self.diff_eq = diff_eq
+        self.solver = solver
+        self.method = method
 
-        self.draw_control_panel(diff_eq)
-
-        root.mainloop()
-
-    def draw_control_panel(self, diff_eq):
-        def update():
-            try:
-                diff_eq.x0 = int(entry_x0.get())
-                diff_eq.y0 = int(entry_y0.get())
-                diff_eq.xn = int(entry_xn.get())
-                diff_eq.h = float(entry_h.get())
-
-                s0 = solver.solve(diff_eq, Exact())
-                s1 = solver.solve(diff_eq, Euler())
-                s2 = solver.solve(diff_eq, ModEuler())
-                s3 = solver.solve(diff_eq, RungeKutta())
-
-                plot(s0, s1, s2, s3, diff_eq)
-            except ValueError:
-                pass
-
+    def create(self):
         control_panel = ttk.Frame(self.root, padding="15")
         control_panel.grid(column=0, row=0, sticky=(N, W, E, S))
 
         ttk.Label(control_panel, text="x0")
         entry_x0 = ttk.Entry(control_panel)
-        entry_x0.insert(END, diff_eq.x0)
+        entry_x0.insert(END, self.diff_eq.x0)
 
         ttk.Label(control_panel, text="y0")
         entry_y0 = ttk.Entry(control_panel)
-        entry_y0.insert(END, diff_eq.y0)
+        entry_y0.insert(END, self.diff_eq.y0)
 
         ttk.Label(control_panel, text="xn")
         entry_xn = ttk.Entry(control_panel)
-        entry_xn.insert(END, diff_eq.xn)
+        entry_xn.insert(END, self.diff_eq.xn)
 
         ttk.Label(control_panel, text="h")
         entry_h = ttk.Entry(control_panel)
-        entry_h.insert(END, diff_eq.h)
+        entry_h.insert(END, self.diff_eq.h)
 
-        btn = ttk.Button(control_panel, text="Plot", command=update)
+        btn = ttk.Button(control_panel, text="Plot",
+                         command=lambda e_x0=entry_x0, e_y0=entry_y0, e_xn=entry_xn, e_h=entry_h:
+                         self.update(e_x0, e_y0, e_xn, e_h))
         btn.grid(column=0, columnspan=2, row=5, sticky=(W, E))
 
         i = 0
         for child in control_panel.winfo_children():
             child.grid_configure(padx=5, pady=5)
+
             if isinstance(child, ttk.Label):
                 child.grid(column=0, row=i, sticky=(W, E))
+
             if isinstance(child, ttk.Entry):
                 child.config(justify=CENTER)
                 child.grid(column=1, row=i, sticky=(W, E))
                 i = i + 1
 
+    def update(self, x0, y0, xn, h):
+        try:
+            self.diff_eq.x0 = int(x0.get())
+            self.diff_eq.y0 = int(y0.get())
+            self.diff_eq.xn = int(xn.get())
+            self.diff_eq.h = float(h.get())
 
-def plot(m0, m1, m2, m3, diff_eq):
-    plt.figure(figsize=(6, 7))
-    plt.suptitle(diff_eq.formula + ", h = " + str(diff_eq.h))
+            s0 = self.solver.solve(self.diff_eq, method["Exact"])
+            s1 = self.solver.solve(self.diff_eq, method["Euler"])
+            s2 = self.solver.solve(self.diff_eq, method["ModEuler"])
+            s3 = self.solver.solve(self.diff_eq, method["RungeKutta"])
 
-    plt.subplot(211)
-    plt.title("Solutions")
-    plt.xlabel("x")
-    plt.ylabel("y")
+            self.plot(s0, s1, s2, s3)
+        except ValueError:
+            pass
 
-    plt.plot(m0[0], m0[1], label=m0[2])
-    plt.plot(m1[0], m1[1], label=m1[2])
-    plt.plot(m2[0], m2[1], label=m2[2])
-    plt.plot(m3[0], m3[1], label=m3[2])
-    plt.subplots_adjust(hspace=0.5)
-    plt.legend()
+    def plot(self, m0, m1, m2, m3):
+        plt.figure(figsize=(6, 7))
+        plt.suptitle(self.diff_eq.formula + ", h = " + str(self.diff_eq.h))
 
-    plt.subplot(212)
-    plt.title("Errors")
-    plt.xlabel("x")
-    plt.ylabel("y")
+        plt.subplot(211)
+        plt.title("Solutions")
+        plt.xlabel("x")
+        plt.ylabel("y")
 
-    plt.plot(m1[0], numpy.array(m1[1]) - numpy.array(m0[1]), label="Error of "+m1[2])
-    plt.plot(m2[0], numpy.array(m2[1]) - numpy.array(m0[1]), label="Error of "+m2[2])
-    plt.plot(m3[0], numpy.array(m3[1]) - numpy.array(m0[1]), label="Error of "+m3[2])
-    plt.legend()
+        plt.plot(m0[0], m0[1], label=m0[2])
+        plt.plot(m1[0], m1[1], label=m1[2])
+        plt.plot(m2[0], m2[1], label=m2[2])
+        plt.plot(m3[0], m3[1], label=m3[2])
+        plt.subplots_adjust(hspace=0.5)
+        plt.legend()
 
-    plt.show()
+        plt.subplot(212)
+        plt.title("Errors")
+        plt.xlabel("x")
+        plt.ylabel("y")
+
+        plt.plot(m1[0], numpy.array(m1[1]) - numpy.array(m0[1]), label="Error of " + m1[2])
+        plt.plot(m2[0], numpy.array(m2[1]) - numpy.array(m0[1]), label="Error of " + m2[2])
+        plt.plot(m3[0], numpy.array(m3[1]) - numpy.array(m0[1]), label="Error of " + m3[2])
+        plt.legend()
+
+        plt.show()
+
+
+class ODESolverApp:
+    def __init__(self, diff_eq, solver, method):
+        root = MainWindow().create()
+        ControlPanel(root, diff_eq, solver, method).create()
+
+        root.mainloop()
 
 
 def ode_func(x, y):
@@ -181,7 +197,8 @@ def ode_exact_sol(x):
     return 3/2*x*(math.e**x - math.e**(2 - x))
 
 
-diff_eq = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
+ode = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
 solver = ODESolver()
+method = {"Exact": Exact(), "Euler": Euler(), "ModEuler": ModEuler(), "RungeKutta": RungeKutta()}
 
-ODESolverApp(diff_eq)
+ODESolverApp(ode, solver, method)
