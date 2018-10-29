@@ -83,51 +83,56 @@ class ODESolver:
         return method.start(diff_eq)
 
 
-class ODESolverApp:
-    def __init__(self, diff_eq, m0, m1, m2, m3):
-        root = Tk()
-        root.title("ODE Solver")
-        root.resizable(width=False, height=False)
-        root.geometry('1000x600')
-        # root.iconbitmap(default="graph-img.gif")
+class MainWindow(Tk):
+    def create(self):
+        self.root.title("ODE Solver")
+        self.root.resizable(width=False, height=False)
+        self.root.geometry('1000x600')
+        self.root.iconbitmap(default="favicon.ico")
+
+        return self.root
+
+
+class ControlPanel(Frame):
+    def __init__(self, root):
+        super().__init__(root)
 
         self.root = root
 
-        self.draw_control_panel(diff_eq)
-        self.draw_graph_area(m0, m1, m2, m3)
-
-        root.mainloop()
-
-    def update(*args):
+    def update_graphs(self, event, solver, method):
         try:
-            pass
+            s0 = solver.solve(diff_eq, method["Exact"])
+            s1 = solver.solve(diff_eq, method["Euler"])
+            s2 = solver.solve(diff_eq, method["ModEuler"])
+            s3 = solver.solve(diff_eq, method["RungeKutta"])
+
+            # self.draw_graph_area(s0, s1, s2, s3)
         except ValueError:
             pass
 
-    def draw_control_panel(self, diff_eq):
-        control_panel = ttk.Frame(self.root, padding="15")
-        control_panel.grid(column=0, row=0, sticky=(N, W, E, S))
+    def draw(self):
+        ttk.Frame(self.root, padding="15").grid(column=0, row=0, sticky=(N, W, E, S))
 
-        ttk.Label(control_panel, text="x0")
-        entry_x0 = ttk.Entry(control_panel)
+        ttk.Label(self, text="x0")
+        entry_x0 = ttk.Entry(self)
         entry_x0.insert(END, diff_eq.x0)
 
-        ttk.Label(control_panel, text="y0")
-        entry_y0 = ttk.Entry(control_panel)
+        ttk.Label(self, text="y0")
+        entry_y0 = ttk.Entry(self)
         entry_y0.insert(END, diff_eq.y0)
 
-        ttk.Label(control_panel, text="xn")
-        entry_xn = ttk.Entry(control_panel)
+        ttk.Label(self, text="xn")
+        entry_xn = ttk.Entry(self)
         entry_xn.insert(END, diff_eq.xn)
 
-        ttk.Label(control_panel, text="h")
-        entry_h = ttk.Entry(control_panel)
+        ttk.Label(self, text="h")
+        entry_h = ttk.Entry(self)
         entry_h.insert(END, diff_eq.h)
 
-        ttk.Button(control_panel, text="Plot", command=self.update).grid(column=0, columnspan=2, row=5, sticky=(W, E))
+        ttk.Button(self, text="Plot", command=update).grid(column=0, columnspan=2, row=5, sticky=(W, E))
 
         i = 0
-        for child in control_panel.winfo_children():
+        for child in self.winfo_children():
             child.grid_configure(padx=5, pady=5)
             if isinstance(child, ttk.Label):
                 child.grid(column=0, row=i, sticky=(W, E))
@@ -136,9 +141,21 @@ class ODESolverApp:
                 child.grid(column=1, row=i, sticky=(W, E))
                 i = i + 1
 
-        self.root.bind('<Return>', self.update)  # action on pressing 'Enter'
+        self.root.bind('<Return>', update)  # action on pressing 'Enter'
 
-    def draw_graph_area(self, m0, m1, m2, m3):
+        return self
+
+
+
+class ODESolverApp:
+    def __init__(self, diff_eq, solver, method):
+        # self.root = self.create_window()
+        root = MainWindow().create()
+        ctrl_panel = ControlPanel(root).draw()
+
+        self.root.mainloop()
+
+    def draw_graph_area(self, diff_eq):
         graph_area = ttk.Frame(self.root, padding="15", width=800, height=600)
         graph_area.grid(column=1, row=0, sticky=(N, W, E, S))
 
@@ -211,12 +228,8 @@ def ode_exact_sol(x):
 
 diff_eq = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
 solver = ODESolver()
-
-m0 = solver.solve(diff_eq, Exact())
-m1 = solver.solve(diff_eq, Euler())
-m2 = solver.solve(diff_eq, ModEuler())
-m3 = solver.solve(diff_eq, RungeKutta())
+method = {"Exact": Exact(), "Euler": Euler(), "ModEuler": ModEuler(), "RungeKutta": RungeKutta()}
 
 # plot(m0, m1, m2, m3, diff_eq)
 
-ODESolverApp(diff_eq, m0, m1, m2, m3)
+ODESolverApp(diff_eq, solver, method)
