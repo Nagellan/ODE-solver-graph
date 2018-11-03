@@ -29,7 +29,7 @@ class Exact(Method):
         ys = [diff_eq.y0]
 
         for x in xs[1:]:
-            y = diff_eq.exact_sol(x)
+            y = diff_eq.exact_sol(x, diff_eq.x0, diff_eq.y0)
             ys.append(y)
 
         return xs, ys, "Exact solution"
@@ -173,9 +173,9 @@ class ControlPanel:
         plt.xlabel("x")
         plt.ylabel("y")
 
-        plt.plot(m1[0], numpy.array(m1[1]) - numpy.array(m0[1]), label="Error of " + m1[2])
-        plt.plot(m2[0], numpy.array(m2[1]) - numpy.array(m0[1]), label="Error of " + m2[2])
-        plt.plot(m3[0], numpy.array(m3[1]) - numpy.array(m0[1]), label="Error of " + m3[2])
+        plt.plot(m1[0], abs(numpy.array(m1[1]) - numpy.array(m0[1])), label="Error of " + m1[2])
+        plt.plot(m2[0], abs(numpy.array(m2[1]) - numpy.array(m0[1])), label="Error of " + m2[2])
+        plt.plot(m3[0], abs(numpy.array(m3[1]) - numpy.array(m0[1])), label="Error of " + m3[2])
         plt.legend()
 
         plt.show()
@@ -193,8 +193,9 @@ def ode_func(x, y):
     return 3*x*math.e**x - y*(1 - 1/x)
 
 
-def ode_exact_sol(x):
-    return 3/2*x*(math.e**x - math.e**(2 - x))
+def ode_exact_sol(x, x0, y0):
+    c = y0*(math.e**x0/x0) - 3/2*math.e**(2*x0)
+    return 3/2*x*math.e**x + c*(x/math.e**x)
 
 
 ode = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
