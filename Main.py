@@ -104,6 +104,8 @@ class MainWindow:
         root.title("ODE Solver")
         root.resizable(width=False, height=False)
         root.iconbitmap(default="favicon.ico")
+        
+        # root.geometry('1000x600')
 
         return root
 
@@ -141,7 +143,7 @@ class ControlPanel:
         btn.grid(column=0, columnspan=2, row=5, sticky=(W, E))
 
         i = 0
-        for child in control_panel.winfo_children():
+        for child in self.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
             if isinstance(child, ttk.Label):
@@ -151,7 +153,7 @@ class ControlPanel:
                 child.config(justify=CENTER)
                 child.grid(column=1, row=i, sticky=(W, E))
                 i = i + 1
-
+                
     def update(self, x0, y0, xn, n):
         if x0 == 0:
             msg.showinfo("Error", "Division by 0!\nThe value x0 = 0 isn't permitted.")
@@ -198,6 +200,68 @@ class ControlPanel:
 
         plt.show()
 
+        # self.root.bind('<Return>', update)  # action on pressing 'Enter'
+
+
+class ODESolverApp0:
+    def __init__(self, diff_eq, solver, method):
+        # self.root = self.create_window()
+        root = MainWindow().create()
+        ctrl_panel = ControlPanel(root).draw()
+
+        self.root.mainloop()
+
+    def draw_graph_area(self, diff_eq):
+        graph_area = ttk.Frame(self.root, padding="15", width=800, height=600)
+        graph_area.grid(column=1, row=0, sticky=(N, W, E, S))
+
+        nb = ttk.Notebook(graph_area)
+        nb.pack(fill='both', expand='yes')
+
+        tab_1 = self.create_tab_1(graph_area, m0, m1, m2, m3)
+        tab_2 = self.create_tab_2(graph_area, m0, m1, m2, m3)
+
+        nb.add(tab_1, text='Solutions')
+        nb.add(tab_2, text='Errors')
+
+    def create_tab_1(self, graph_area, m0, m1, m2, m3):
+        tab = Frame(graph_area, width=750, height=520)
+
+        fig = Figure(figsize=(5, 5), dpi=100)
+        graph = fig.add_subplot(111)
+        graph.plot(m0[0], m0[1])
+        graph.plot(m1[0], m1[1])
+        graph.plot(m2[0], m2[1])
+        graph.plot(m3[0], m3[1])
+
+        canvas = FigureCanvasTkAgg(fig, tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+
+        toolbar = NavigationToolbar2Tk(canvas, tab)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
+
+        return tab
+
+    def create_tab_2(self, graph_area, m0, m1, m2, m3):
+        tab = Frame(graph_area, width=750, height=520)
+        fig = Figure(figsize=(5, 5), dpi=100)
+        graph = fig.add_subplot(111)
+        graph.plot(m1[0], numpy.array(m1[1] - numpy.array(m0[1])))
+        graph.plot(m2[0], numpy.array(m2[1] - numpy.array(m0[1])))
+        graph.plot(m3[0], numpy.array(m3[1] - numpy.array(m0[1])))
+
+        canvas = FigureCanvasTkAgg(fig, tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+
+        toolbar = NavigationToolbar2Tk(canvas, tab)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
+
+        return tab
+
 
 class ODESolverApp:
     def __init__(self, diff_eq, solver, method):
@@ -214,7 +278,7 @@ def ode_exact_sol(x, x0, y0):
     c = y0*(math.e**x0/x0) - 3/2*math.e**(2*x0)
     return 3/2*x*math.e**x + c*(x/math.e**x)
 
-
+  
 ode = DiffEquation(1, 0, 5, 5, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
 ode_solver = ODESolver()
 methods_list = {"Exact": Exact(), "Euler": Euler(), "ModEuler": ModEuler(), "RungeKutta": RungeKutta()}
