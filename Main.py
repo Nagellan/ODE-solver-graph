@@ -1,18 +1,19 @@
 import math
-import numpy
+import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox as msg
 
 
 class DiffEquation:
-    def __init__(self, x0, y0, xn, h, f, exact_sol, formula):
+    def __init__(self, x0, y0, xn, n, f, exact_sol, formula):
         self.x0 = x0
         self.y0 = y0
         self.xn = xn
-        self.h = h
+        self.n = n
         self.f = f
         self.exact_sol = exact_sol
         self.formula = formula
@@ -20,58 +21,73 @@ class DiffEquation:
 
 class Method:
     def start(self, diff_eq):
-        pass
+        h = (diff_eq.xn - diff_eq.x0)/diff_eq.n
+        xs = list(np.linspace(diff_eq.x0, diff_eq.xn, diff_eq.n))
+        ys = [diff_eq.y0]
+
+        return h, xs, ys
 
 
 class Exact(Method):
     def start(self, diff_eq):
-        xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
-        ys = [diff_eq.y0]
+        h, xs, ys = super().start(diff_eq)
 
         for x in xs[1:]:
-            y = diff_eq.exact_sol(x, diff_eq.x0, diff_eq.y0)
-            ys.append(y)
+            if x != 0:
+                y = diff_eq.exact_sol(x, diff_eq.x0, diff_eq.y0)
+                ys.append(y)
+
+        if 0 in xs:
+            xs.remove(0)
 
         return xs, ys, "Exact solution"
 
 
 class Euler(Method):
     def start(self, diff_eq):
-        xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
-        ys = [diff_eq.y0]
+        h, xs, ys = super().start(diff_eq)
 
         for x in xs[1:]:
-            y = ys[-1] + diff_eq.h*diff_eq.f(x, ys[-1])
-            ys.append(y)
+            if x != 0:
+                y = ys[-1] + h*diff_eq.f(x, ys[-1])
+                ys.append(y)
+
+        if 0 in xs:
+            xs.remove(0)
 
         return xs, ys, "Euler method"
 
 
 class ModEuler(Method):
     def start(self, diff_eq):
-        xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
-        ys = [diff_eq.y0]
+        h, xs, ys = super().start(diff_eq)
 
         for x in xs[1:]:
-            k1 = diff_eq.f(x, ys[-1])
-            k2 = diff_eq.f(x + diff_eq.h, ys[-1] + diff_eq.h*k1)
-            y = ys[-1] + diff_eq.h*((k1 + k2)/2)
-            ys.append(y)
+            if x != 0 and x + h != 0:
+                k1 = diff_eq.f(x, ys[-1])
+                k2 = diff_eq.f(x + h, ys[-1] + h*k1)
+                y = ys[-1] + h*((k1 + k2)/2)
+                ys.append(y)
+
+        xs = list(filter(lambda x: x != 0 and x != -h, xs))
 
         return xs, ys, "Modified Euler method"
 
 
 class RungeKutta(Method):
     def start(self, diff_eq):
-        xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
-        ys = [diff_eq.y0]
+        h, xs, ys = super().start(diff_eq)
 
         for x in xs[1:]:
-            k1 = diff_eq.h*diff_eq.f(x, ys[-1])
-            k2 = diff_eq.h*diff_eq.f(x + diff_eq.h/2, ys[-1] + k1/2)
-            k3 = diff_eq.h*diff_eq.f(x + diff_eq.h/2, ys[-1] + k2/2)
-            k4 = diff_eq.h*diff_eq.f(x + diff_eq.h, ys[-1] + k3)
-            ys.append(ys[-1] + k1/6 + k2/3 + k3/3 + k4/6)
+            if x != 0 and x + h != 0 and x + h/2 != 0:
+                k1 = h*diff_eq.f(x, ys[-1])
+                k2 = h*diff_eq.f(x + h/2, ys[-1] + k1/2)
+                k3 = h*diff_eq.f(x + h/2, ys[-1] + k2/2)
+                k4 = h*diff_eq.f(x + h, ys[-1] + k3)
+                y = ys[-1] + k1/6 + k2/3 + k3/3 + k4/6
+                ys.append(y)
+
+        xs = list(filter(lambda x: x != 0 and x != -h and x != -h/2, xs))
 
         return xs, ys, "Runge Kutta method"
 
@@ -115,13 +131,13 @@ class ControlPanel:
         entry_xn = ttk.Entry(control_panel)
         entry_xn.insert(END, self.diff_eq.xn)
 
-        ttk.Label(control_panel, text="h")
-        entry_h = ttk.Entry(control_panel)
-        entry_h.insert(END, self.diff_eq.h)
+        ttk.Label(control_panel, text="n")
+        entry_n = ttk.Entry(control_panel)
+        entry_n.insert(END, self.diff_eq.n)
 
         btn = ttk.Button(control_panel, text="Plot",
-                         command=lambda e_x0=entry_x0, e_y0=entry_y0, e_xn=entry_xn, e_h=entry_h:
-                         self.update(e_x0, e_y0, e_xn, e_h))
+                         command=lambda e_x0=entry_x0, e_y0=entry_y0, e_xn=entry_xn, e_n=entry_n:
+                         self.update(int(e_x0.get()), int(e_y0.get()), int(e_xn.get()), int(e_n.get())))
         btn.grid(column=0, columnspan=2, row=5, sticky=(W, E))
 
         i = 0
@@ -136,47 +152,49 @@ class ControlPanel:
                 child.grid(column=1, row=i, sticky=(W, E))
                 i = i + 1
 
-    def update(self, x0, y0, xn, h):
-        try:
-            self.diff_eq.x0 = int(x0.get())
-            self.diff_eq.y0 = int(y0.get())
-            self.diff_eq.xn = int(xn.get())
-            self.diff_eq.h = float(h.get())
+    def update(self, x0, y0, xn, n):
+        if x0 == 0:
+            msg.showinfo("Error", "Division by 0!\nThe value x0 = 0 isn't permitted.")
+        else:
+            self.diff_eq.x0 = x0
+            self.diff_eq.y0 = y0
+            self.diff_eq.xn = xn
+            self.diff_eq.n = n
 
-            s0 = self.solver.solve(self.diff_eq, method["Exact"])
-            s1 = self.solver.solve(self.diff_eq, method["Euler"])
-            s2 = self.solver.solve(self.diff_eq, method["ModEuler"])
-            s3 = self.solver.solve(self.diff_eq, method["RungeKutta"])
+            plots = [
+                self.solver.solve(self.diff_eq, self.method["Exact"]),
+                self.solver.solve(self.diff_eq, self.method["Euler"]),
+                self.solver.solve(self.diff_eq, self.method["ModEuler"]),
+                self.solver.solve(self.diff_eq, self.method["RungeKutta"])
+            ]
 
-            self.plot(s0, s1, s2, s3)
-        except ValueError:
-            pass
+            self.plot(plots)
 
-    def plot(self, m0, m1, m2, m3):
+    def plot(self, plots):
         plt.figure(figsize=(6, 7))
-        plt.suptitle(self.diff_eq.formula + ", h = " + str(self.diff_eq.h))
+        plt.suptitle(self.diff_eq.formula + "\nx0 = " + str(self.diff_eq.x0) + ", xn = " + str(self.diff_eq.xn)
+                     + ", y0 = " + str(self.diff_eq.y0) + ", n = " + str(self.diff_eq.n))
 
         plt.subplot(211)
         plt.title("Solutions")
         plt.xlabel("x")
         plt.ylabel("y")
 
-        plt.plot(m0[0], m0[1], label=m0[2])
-        plt.plot(m1[0], m1[1], label=m1[2])
-        plt.plot(m2[0], m2[1], label=m2[2])
-        plt.plot(m3[0], m3[1], label=m3[2])
-        plt.subplots_adjust(hspace=0.5)
-        plt.legend()
+        if len(plots) > 0:
+            for plot in plots:
+                plt.plot(plot[0], plot[1], label=plot[2])
+            plt.subplots_adjust(hspace=0.5)
+            plt.legend()
 
         plt.subplot(212)
         plt.title("Errors")
         plt.xlabel("x")
         plt.ylabel("y")
 
-        plt.plot(m1[0], abs(numpy.array(m1[1]) - numpy.array(m0[1])), label="Error of " + m1[2])
-        plt.plot(m2[0], abs(numpy.array(m2[1]) - numpy.array(m0[1])), label="Error of " + m2[2])
-        plt.plot(m3[0], abs(numpy.array(m3[1]) - numpy.array(m0[1])), label="Error of " + m3[2])
-        plt.legend()
+        if len(plots) > 1 and plots[0][2] == "Exact solution":
+            for plot in plots[1:]:
+                plt.plot(plot[0], abs(np.array(plot[1]) - np.array(plots[0][1])), label="Error of " + plot[2])
+            plt.legend()
 
         plt.show()
 
@@ -185,7 +203,6 @@ class ODESolverApp:
     def __init__(self, diff_eq, solver, method):
         root = MainWindow().create()
         ControlPanel(root, diff_eq, solver, method).create()
-
         root.mainloop()
 
 
@@ -198,8 +215,8 @@ def ode_exact_sol(x, x0, y0):
     return 3/2*x*math.e**x + c*(x/math.e**x)
 
 
-ode = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
-solver = ODESolver()
-method = {"Exact": Exact(), "Euler": Euler(), "ModEuler": ModEuler(), "RungeKutta": RungeKutta()}
+ode = DiffEquation(1, 0, 5, 5, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
+ode_solver = ODESolver()
+methods_list = {"Exact": Exact(), "Euler": Euler(), "ModEuler": ModEuler(), "RungeKutta": RungeKutta()}
 
-ODESolverApp(ode, solver, method)
+ODESolverApp(ode, ode_solver, methods_list)
