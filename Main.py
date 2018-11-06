@@ -5,9 +5,13 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as msg
 
+import matplotlib
+
+matplotlib.use("TkAgg")
+
+from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
-from matplotlib import pyplot as plt
 
 
 class DiffEquation:
@@ -119,6 +123,9 @@ class ControlPanel:
         control_panel = ttk.Frame(root, padding="15")
         control_panel.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 
+        l_title = ttk.Label(control_panel, text=diff_eq.formula, font=("Arial", 14))
+        l_title.grid(column=0, columnspan=2, row=0, sticky=(tk.W, tk.E), pady="20")
+
         ttk.Label(control_panel, text="x0")
         entry_x0 = ttk.Entry(control_panel)
         entry_x0.insert(tk.END, diff_eq.x0)
@@ -136,7 +143,7 @@ class ControlPanel:
         entry_n.insert(tk.END, diff_eq.n)
 
         sep = ttk.Separator(control_panel, orient=tk.HORIZONTAL)
-        sep.grid(column=0, columnspan=2, row=4, sticky=(tk.N, tk.W, tk.E, tk.S))
+        sep.grid(column=0, columnspan=2, row=1, sticky=(tk.N, tk.W, tk.E, tk.S))
 
         ttk.Label(control_panel, text="n0")
         entry_n0 = ttk.Entry(control_panel)
@@ -146,9 +153,9 @@ class ControlPanel:
         entry_nn = ttk.Entry(control_panel)
         entry_nn.insert(tk.END, 10)
 
-        i = 0
-        for child in control_panel.winfo_children():
-            if i == 4:
+        i = 1
+        for child in control_panel.winfo_children()[1:]:
+            if i == 1:
                 i = i + 1
             child.grid_configure(padx=5, pady=5)
 
@@ -188,61 +195,17 @@ class ControlPanel:
             self.diff_eq.xn = xn
             self.diff_eq.n = n
 
-            # plots = []
-            # for mtd in self.methods:
-            #     plots.append(self.solver.solve(self.diff_eq, mtd))
-            #
-            # plots1 = []
-            # for plot in plots[1:]:
-            #     plots1.append((plot[0], list(abs(np.array(plot[1]) - np.array(plots[0][1]))), plot[2]))
-            #
-            # plots2 = []
-            # ns = np.linspace(n0, nn, nn - 1)
-            # for mtd in self.methods[1:]:
-            #     errors = []
-            #     plot = []
-            #     for _n in ns:
-            #         self.diff_eq.n = _n
-            #         plot = self.solver.solve(self.diff_eq, mtd)
-            #         exact = self.solver.solve(self.diff_eq, self.methods[0])
-            #         errors.append(max(list(abs(np.array(plot[1]) - np.array(exact[1])))))
-            #     plots2.append((ns, errors, plot[2]))
-            #
-            # self.tabs[0].update(plots)
-            # self.tabs[1].update(plots1)
-            # self.tabs[2].update(plots2)
+            self.tabs[0].get_solutions(self.diff_eq, self.solver, self.methods)
+            plots = self.tabs[0].plt
+            self.tabs[0].update()
 
-            plots = self.tabs[0].get_solutions(self.diff_eq, self.solver, self.methods)
-            self.tabs[0].update(plots)
-            self.tabs[1].update(self.tabs[1].get_local_errors(plots))
-            self.tabs[2].update(self.tabs[2].get_global_errors(self.diff_eq, self.solver, self.methods, n0, nn))
+            self.tabs[1].get_local_errors(plots)
+            self.tabs[1].update()
 
-    def plot(self, plots):
-        plt.figure(figsize=(6, 7))
-        plt.suptitle(self.diff_eq.formula + "\nx0 = " + str(self.diff_eq.x0) + ", xn = " + str(self.diff_eq.xn)
-                     + ", y0 = " + str(self.diff_eq.y0) + ", n = " + str(self.diff_eq.n))
+            self.tabs[2].get_global_errors(self.diff_eq, self.solver, self.methods, n0, nn)
+            self.tabs[2].update()
 
-        plt.subplot(211)
-        plt.title("Solutions")
-        plt.xlabel("x")
-        plt.ylabel("y")
-
-        for plot in plots:
-            plt.plot(plot[0], plot[1], label=plot[2])
-        plt.subplots_adjust(hspace=0.5)
-        plt.legend()
-
-        plt.subplot(212)
-        plt.title("Errors")
-        plt.xlabel("x")
-        plt.ylabel("y")
-
-        if len(plots) > 1 and plots[0][2] == "Exact solution":
-            for plot in plots[1:]:
-                plt.plot(plot[0], abs(np.array(plot[1]) - np.array(plots[0][1])), label="Error of " + plot[2])
-            plt.legend()
-
-        plt.show()
+            self.diff_eq.n = n
 
 
 class GraphArea:
@@ -256,8 +219,9 @@ class GraphArea:
 
 class Tab:
     title = "Empty tab"
+    plt = []
 
-    def __init__(self, graph_area):
+    def __init__(self, graph_area, pop_up):
         tab = tk.Frame(graph_area, width=750, height=400)
         fig = Figure(figsize=(5, 5), dpi=100)
 
@@ -271,16 +235,22 @@ class Tab:
         toolbar.update()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
+        btn = ttk.Button(toolbar, text="Open in a new window", padding="5",
+                         command=lambda this_tab=self, title=self.title: pop_up.create(this_tab.plt, title))
+        btn.pack(side=tk.LEFT, padx="10", pady="5")
+
         self.item = tab
         self.graph = graph
         self.canvas = canvas
         self.toolbar = toolbar
 
-    def update(self, plots):
+    def update(self):
         self.graph.clear()
 
-        for plot in plots:
+        for plot in self.plt:
             self.graph.plot(plot[0], plot[1], label=self.title + " of " + plot[2])
+            self.graph.set_xlabel("x")
+            self.graph.set_ylabel("y")
 
         self.graph.legend()
         self.canvas.draw()
@@ -294,7 +264,7 @@ class TabSolution(Tab):
         plots = []
         for mtd in methods:
             plots.append(solver.solve(diff_eq, mtd))
-        return plots
+        self.plt = plots
 
 
 class TabLocalError(Tab):
@@ -304,7 +274,7 @@ class TabLocalError(Tab):
         local_errors = []
         for plot in plots[1:]:
             local_errors.append((plot[0], list(abs(np.array(plot[1]) - np.array(plots[0][1]))), plot[2]))
-        return local_errors
+        self.plt = local_errors
 
 
 class TabTotalError(Tab):
@@ -322,7 +292,30 @@ class TabTotalError(Tab):
                 exact = solver.solve(diff_eq, methods[0])
                 errors.append(max(list(abs(np.array(plot[1]) - np.array(exact[1])))))
             global_errors.append((ns, errors, plot[2]))
-        return global_errors
+        self.plt = global_errors
+
+
+class PopUpWindow:
+    def __init__(self, diff_eq):
+        self.diff_eq = diff_eq
+
+    def create(self, plots, title):
+        graph_data = "x0 = " + str(self.diff_eq.x0) + ", xn = " + str(self.diff_eq.xn) + ", y0 = " \
+                     + str(self.diff_eq.y0) + ", N = " + str(self.diff_eq.n)
+        plt.figure(figsize=(7, 6))
+        plt.suptitle(title + "\n" + self.diff_eq.formula + "\n" + graph_data)
+        this_manager = plt.get_current_fig_manager()
+        this_manager.window.wm_iconbitmap("favicon.ico")
+
+        plt.subplot(111)
+        plt.xlabel("x")
+        plt.ylabel("y")
+
+        for plot in plots:
+            plt.plot(plot[0], plot[1], label=plot[2])
+        plt.legend()
+
+        plt.show()
 
 
 class ODESolverApp:
@@ -330,10 +323,12 @@ class ODESolverApp:
         root = MainWindow().item
         graph_area = GraphArea(root).item
 
+        pop_up = PopUpWindow(diff_eq)
+
         tabs = [
-            TabSolution(graph_area),
-            TabLocalError(graph_area),
-            TabTotalError(graph_area)
+            TabSolution(graph_area, pop_up),
+            TabLocalError(graph_area, pop_up),
+            TabTotalError(graph_area, pop_up)
         ]
 
         for tab in tabs:
@@ -348,8 +343,8 @@ def ode_func(x, y):
 
 
 def ode_exact_sol(x, x0, y0):
-    c = y0*(math.e**x0/x0) - 3/2*math.e**(2*x0)
-    return 3/2*x*math.e**x + c*(x/math.e**x)
+    c = y0*((math.e**x0)/x0) - (3/2)*(math.e**(2*x0))
+    return (3/2)*x*math.e**x + c*(x/math.e**x)
 
 
 ode = DiffEquation(1, 0, 5, 5, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
