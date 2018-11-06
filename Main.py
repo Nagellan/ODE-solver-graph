@@ -1,20 +1,25 @@
 import math
-import numpy
+import numpy as np
+
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox as msg
+
 import matplotlib
+
 matplotlib.use("TkAgg")
+
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
-from tkinter import *
-from tkinter import ttk
 
 
 class DiffEquation:
-    def __init__(self, x0, y0, xn, h, f, exact_sol, formula):
+    def __init__(self, x0, y0, xn, n, f, exact_sol, formula):
         self.x0 = x0
         self.y0 = y0
         self.xn = xn
-        self.h = h
+        self.n = n
         self.f = f
         self.exact_sol = exact_sol
         self.formula = formula
@@ -22,60 +27,74 @@ class DiffEquation:
 
 class Method:
     def start(self, diff_eq):
-        pass
+        h = (diff_eq.xn - diff_eq.x0)/(diff_eq.n - 1)
+        xs = list(np.linspace(diff_eq.x0, diff_eq.xn, diff_eq.n))
+        ys = [diff_eq.y0]
+
+        return h, xs, ys
 
 
 class Exact(Method):
     def start(self, diff_eq):
-        xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
-        ys = [diff_eq.y0]
+        h, xs, ys = super().start(diff_eq)
 
         for x in xs[1:]:
-            y = diff_eq.exact_sol(x)
-            ys.append(y)
+            if x != 0 and x + h != 0 and x + h/2 != 0:
+                y = diff_eq.exact_sol(x, diff_eq.x0, diff_eq.y0)
+                ys.append(y)
 
-        return xs, ys, "Exact solution"
+        xs = list(filter(lambda x: x != 0 and x != -h and x != -h/2, xs))
+
+        return xs, ys, "Analytical method"
 
 
 class Euler(Method):
     def start(self, diff_eq):
-        xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
-        ys = [diff_eq.y0]
+        h, xs, ys = super().start(diff_eq)
 
-        for x in xs[1:]:
-            y = ys[-1] + diff_eq.h*diff_eq.f(x, ys[-1])
-            ys.append(y)
+        for x in xs:
+            if x != 0 and x + h != 0 and x + h/2 != 0:
+                y = ys[-1] + h*diff_eq.f(x, ys[-1])
+                ys.append(y)
 
-        return xs, ys, "Euler method"
+        xs = list(filter(lambda x: x != 0 and x != -h and x != -h/2, xs))
+
+        return xs, ys[:-1], "Euler method"
 
 
 class ModEuler(Method):
     def start(self, diff_eq):
-        xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
-        ys = [diff_eq.y0]
+        h, xs, ys = super().start(diff_eq)
 
-        for x in xs[1:]:
-            k1 = diff_eq.f(x, ys[-1])
-            k2 = diff_eq.f(x + diff_eq.h, ys[-1] + diff_eq.h*k1)
-            y = ys[-1] + diff_eq.h*((k1 + k2)/2)
-            ys.append(y)
+        for x in xs:
+            if x != 0 and x + h != 0 and x + h/2 != 0:
+                k1 = diff_eq.f(x, ys[-1])
+                k2 = diff_eq.f(x + h, ys[-1] + h*k1)
+                y = ys[-1] + h*((k1 + k2)/2)
+                ys.append(y)
 
-        return xs, ys, "Modified Euler method"
+        xs = list(filter(lambda x: x != 0 and x != -h and x != -h/2, xs))
+
+        return xs, ys[:-1], "Modified Euler method"
 
 
 class RungeKutta(Method):
     def start(self, diff_eq):
-        xs = numpy.arange(diff_eq.x0, diff_eq.xn + diff_eq.h, diff_eq.h)
-        ys = [diff_eq.y0]
+        h, xs, ys = super().start(diff_eq)
 
-        for x in xs[1:]:
-            k1 = diff_eq.h*diff_eq.f(x, ys[-1])
-            k2 = diff_eq.h*diff_eq.f(x + diff_eq.h/2, ys[-1] + k1/2)
-            k3 = diff_eq.h*diff_eq.f(x + diff_eq.h/2, ys[-1] + k2/2)
-            k4 = diff_eq.h*diff_eq.f(x + diff_eq.h, ys[-1] + k3)
-            ys.append(ys[-1] + k1/6 + k2/3 + k3/3 + k4/6)
+        for x in xs:
+            if x != 0 and x + h != 0 and x + h/2 != 0:
+                y = ys[-1]
+                k1 = h*diff_eq.f(x, y)
+                k2 = h*diff_eq.f(x + h/2, y + k1/2)
+                k3 = h*diff_eq.f(x + h/2, y + k2/2)
+                k4 = h*diff_eq.f(x + h, y + k3)
+                y += (k1 + 2*k2 + 2*k3 + k4)/6
+                ys.append(y)
 
-        return xs, ys, "Runge Kutta method"
+        xs = list(filter(lambda x: x != 0 and x != -h and x != -h/2, xs))
+
+        return xs, ys[:-1], "Runge Kutta method"
 
 
 class ODESolver:
@@ -83,140 +102,253 @@ class ODESolver:
         return method.start(diff_eq)
 
 
-class ODESolverApp:
-    def __init__(self, diff_eq, m0, m1, m2, m3):
-        root = Tk()
+class MainWindow:
+    def __init__(self):
+        root = tk.Tk()
         root.title("ODE Solver")
         root.resizable(width=False, height=False)
-        root.geometry('1000x600')
-        # root.iconbitmap(default="graph-img.gif")
+        root.iconbitmap(default="favicon.ico")
+        root.geometry('1000x630')
 
-        self.root = root
+        self.item = root
 
-        self.draw_control_panel(diff_eq)
-        self.draw_graph_area(m0, m1, m2, m3)
 
-        root.mainloop()
+class ControlPanel:
+    def __init__(self, root, tabs, diff_eq, solver, methods):
+        self.tabs = tabs
+        self.diff_eq = diff_eq
+        self.solver = solver
+        self.methods = methods
 
-    def update(*args):
-        try:
-            pass
-        except ValueError:
-            pass
+        control_panel = ttk.Frame(root, padding="15")
+        control_panel.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 
-    def draw_control_panel(self, diff_eq):
-        control_panel = ttk.Frame(self.root, padding="15")
-        control_panel.grid(column=0, row=0, sticky=(N, W, E, S))
+        l_title = ttk.Label(control_panel, text=diff_eq.formula, font=("Arial", 14))
+        l_title.grid(column=0, columnspan=2, row=0, sticky=(tk.W, tk.E), pady="20")
 
         ttk.Label(control_panel, text="x0")
         entry_x0 = ttk.Entry(control_panel)
-        entry_x0.insert(END, diff_eq.x0)
+        entry_x0.insert(tk.END, diff_eq.x0)
 
         ttk.Label(control_panel, text="y0")
         entry_y0 = ttk.Entry(control_panel)
-        entry_y0.insert(END, diff_eq.y0)
+        entry_y0.insert(tk.END, diff_eq.y0)
 
         ttk.Label(control_panel, text="xn")
         entry_xn = ttk.Entry(control_panel)
-        entry_xn.insert(END, diff_eq.xn)
+        entry_xn.insert(tk.END, diff_eq.xn)
 
-        ttk.Label(control_panel, text="h")
-        entry_h = ttk.Entry(control_panel)
-        entry_h.insert(END, diff_eq.h)
+        ttk.Label(control_panel, text="N")
+        entry_n = ttk.Entry(control_panel)
+        entry_n.insert(tk.END, diff_eq.n)
 
-        ttk.Button(control_panel, text="Plot", command=self.update).grid(column=0, columnspan=2, row=5, sticky=(W, E))
+        sep = ttk.Separator(control_panel, orient=tk.HORIZONTAL)
+        sep.grid(column=0, columnspan=2, row=1, sticky=(tk.N, tk.W, tk.E, tk.S))
 
-        i = 0
-        for child in control_panel.winfo_children():
+        ttk.Label(control_panel, text="n0")
+        entry_n0 = ttk.Entry(control_panel)
+        entry_n0.insert(tk.END, 2)
+
+        ttk.Label(control_panel, text="n")
+        entry_nn = ttk.Entry(control_panel)
+        entry_nn.insert(tk.END, 10)
+
+        i = 1
+        for child in control_panel.winfo_children()[1:]:
+            if i == 1:
+                i = i + 1
             child.grid_configure(padx=5, pady=5)
+
             if isinstance(child, ttk.Label):
-                child.grid(column=0, row=i, sticky=(W, E))
+                child.grid(column=0, row=i, sticky=(tk.W, tk.E))
+
             if isinstance(child, ttk.Entry):
-                child.config(justify=CENTER)
-                child.grid(column=1, row=i, sticky=(W, E))
+                child.config(justify=tk.CENTER)
+                child.grid(column=1, row=i, sticky=(tk.W, tk.E))
                 i = i + 1
 
-        self.root.bind('<Return>', self.update)  # action on pressing 'Enter'
+        btn = ttk.Button(control_panel, text="Plot", padding="10",
+                         command=lambda x0=entry_x0, y0=entry_y0, xn=entry_xn, n=entry_n, n0=entry_n0, nn=entry_nn:
+                         self.update(int(x0.get()), int(y0.get()), int(xn.get()),
+                                     int(n.get()), int(n0.get()), int(nn.get())))
 
-    def draw_graph_area(self, m0, m1, m2, m3):
-        graph_area = ttk.Frame(self.root, padding="15", width=800, height=600)
-        graph_area.grid(column=1, row=0, sticky=(N, W, E, S))
+        btn.grid(column=0, columnspan=2, row=i+1, sticky=(tk.W, tk.E), pady="25")
 
-        nb = ttk.Notebook(graph_area)
-        nb.pack(fill='both', expand='yes')
+        self.update(int(entry_x0.get()), int(entry_y0.get()), int(entry_xn.get()),
+                    int(entry_n.get()), int(entry_n0.get()), int(entry_nn.get()))
 
-        tab_1 = self.create_tab_1(graph_area, m0, m1, m2, m3)
-        tab_2 = self.create_tab_2(graph_area, m0, m1, m2, m3)
+    def update(self, x0, y0, xn, n, n0, nn):
+        def no_errors(_x0, _n0):
+            message = ""
+            if _x0 == 0:
+                message += "Division by 0!\nThe value x0 = 0 isn't permitted.\n\n"
+            if _n0 < 2:
+                message += "Division by 0!\nThe value of n0 must be greater than or equal to 2."
+            if len(message) > 0:
+                msg.showinfo("Error(s)!", message)
+                return 0
+            return 1
 
-        nb.add(tab_1, text='Solutions')
-        nb.add(tab_2, text='Errors')
+        if no_errors(x0, n0):
+            self.diff_eq.x0 = x0
+            self.diff_eq.y0 = y0
+            self.diff_eq.xn = xn
+            self.diff_eq.n = n
 
-    def create_tab_1(self, graph_area, m0, m1, m2, m3):
-        tab = Frame(graph_area, width=750, height=520)
+            self.tabs[0].get_solutions(self.diff_eq, self.solver, self.methods)
+            plots = self.tabs[0].plt
+            self.tabs[0].update()
 
+            self.tabs[1].get_local_errors(plots)
+            self.tabs[1].update()
+
+            self.tabs[2].get_global_errors(self.diff_eq, self.solver, self.methods, n0, nn)
+            self.tabs[2].update()
+
+            self.diff_eq.n = n
+
+
+class GraphArea:
+    def __init__(self, root):
+        graph_area = ttk.Notebook(root, padding="15", width=750, height=550)
+        graph_area.pack(fill='both', expand='yes')
+        graph_area.grid(column=1, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
+
+        self.item = graph_area
+
+
+class Tab:
+    title = "Empty tab"
+    plt = []
+
+    def __init__(self, graph_area, pop_up):
+        tab = tk.Frame(graph_area, width=750, height=400)
         fig = Figure(figsize=(5, 5), dpi=100)
+
         graph = fig.add_subplot(111)
-        graph.plot(m0[0], m0[1])
-        graph.plot(m1[0], m1[1])
-        graph.plot(m2[0], m2[1])
-        graph.plot(m3[0], m3[1])
 
         canvas = FigureCanvasTkAgg(fig, tab)
         canvas.draw()
-        canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+        canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
         toolbar = NavigationToolbar2Tk(canvas, tab)
         toolbar.update()
-        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        return tab
+        btn = ttk.Button(toolbar, text="Open in a new window", padding="5",
+                         command=lambda this_tab=self, title=self.title: pop_up.create(this_tab.plt, title))
+        btn.pack(side=tk.LEFT, padx="10", pady="5")
 
-    def create_tab_2(self, graph_area, m0, m1, m2, m3):
-        tab = Frame(graph_area, width=750, height=520)
-        fig = Figure(figsize=(5, 5), dpi=100)
-        graph = fig.add_subplot(111)
-        graph.plot(m1[0], numpy.array(m1[1] - numpy.array(m0[1])))
-        graph.plot(m2[0], numpy.array(m2[1] - numpy.array(m0[1])))
-        graph.plot(m3[0], numpy.array(m3[1] - numpy.array(m0[1])))
+        self.item = tab
+        self.graph = graph
+        self.canvas = canvas
+        self.toolbar = toolbar
 
-        canvas = FigureCanvasTkAgg(fig, tab)
-        canvas.draw()
-        canvas.get_tk_widget().pack(side=BOTTOM, fill=BOTH, expand=True)
+    def update(self):
+        self.graph.clear()
 
-        toolbar = NavigationToolbar2Tk(canvas, tab)
-        toolbar.update()
-        canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=True)
+        for plot in self.plt:
+            self.graph.plot(plot[0], plot[1], label=self.title + " of " + plot[2])
+            self.graph.set_xlabel("x")
+            self.graph.set_ylabel("y")
 
-        return tab
+        self.graph.legend()
+        self.canvas.draw()
+        self.toolbar.update()
 
 
-def plot(m0, m1, m2, m3, diff_eq):
-    plt.plot(m0[0], m0[1], label=m0[2])
-    plt.plot(m1[0], m1[1], label=m1[2])
-    plt.plot(m2[0], m2[1], label=m2[2])
-    plt.plot(m3[0], m3[1], label=m3[2])
+class TabSolution(Tab):
+    title = "Solution"
 
-    plt.title(diff_eq.formula + ", h = " + str(diff_eq.h))
-    plt.legend()
-    plt.show()
+    def get_solutions(self, diff_eq, solver, methods):
+        plots = []
+        for mtd in methods:
+            plots.append(solver.solve(diff_eq, mtd))
+        self.plt = plots
+
+
+class TabLocalError(Tab):
+    title = "Local error"
+
+    def get_local_errors(self, plots):
+        local_errors = []
+        for plot in plots[1:]:
+            local_errors.append((plot[0], list(abs(np.array(plot[1]) - np.array(plots[0][1]))), plot[2]))
+        self.plt = local_errors
+
+
+class TabTotalError(Tab):
+    title = "Total approximation error"
+
+    def get_global_errors(self, diff_eq, solver, methods, n0, nn):
+        global_errors = []
+        ns = np.linspace(n0, nn, nn - 1)
+        for mtd in methods[1:]:
+            errors = []
+            plot = []
+            for _n in ns:
+                diff_eq.n = _n
+                plot = solver.solve(diff_eq, mtd)
+                exact = solver.solve(diff_eq, methods[0])
+                errors.append(max(list(abs(np.array(plot[1]) - np.array(exact[1])))))
+            global_errors.append((ns, errors, plot[2]))
+        self.plt = global_errors
+
+
+class PopUpWindow:
+    def __init__(self, diff_eq):
+        self.diff_eq = diff_eq
+
+    def create(self, plots, title):
+        graph_data = "x0 = " + str(self.diff_eq.x0) + ", xn = " + str(self.diff_eq.xn) + ", y0 = " \
+                     + str(self.diff_eq.y0) + ", N = " + str(self.diff_eq.n)
+        plt.figure(figsize=(7, 6))
+        plt.suptitle(title + "\n" + self.diff_eq.formula + "\n" + graph_data)
+        this_manager = plt.get_current_fig_manager()
+        this_manager.window.wm_iconbitmap("favicon.ico")
+
+        plt.subplot(111)
+        plt.xlabel("x")
+        plt.ylabel("y")
+
+        for plot in plots:
+            plt.plot(plot[0], plot[1], label=plot[2])
+        plt.legend()
+
+        plt.show()
+
+
+class ODESolverApp:
+    def __init__(self, diff_eq, solver, method):
+        root = MainWindow().item
+        graph_area = GraphArea(root).item
+
+        pop_up = PopUpWindow(diff_eq)
+
+        tabs = [
+            TabSolution(graph_area, pop_up),
+            TabLocalError(graph_area, pop_up),
+            TabTotalError(graph_area, pop_up)
+        ]
+
+        for tab in tabs:
+            graph_area.add(tab.item, text=tab.title)
+
+        ControlPanel(root, tabs, diff_eq, solver, method)
+        root.mainloop()
 
 
 def ode_func(x, y):
     return 3*x*math.e**x - y*(1 - 1/x)
 
 
-def ode_exact_sol(x):
-    return 3/2*x*(math.e**x - math.e**(2 - x))
+def ode_exact_sol(x, x0, y0):
+    c = y0*((math.e**x0)/x0) - (3/2)*(math.e**(2*x0))
+    return (3/2)*x*math.e**x + c*(x/math.e**x)
 
 
-diff_eq = DiffEquation(1, 0, 5, 1, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
-solver = ODESolver()
+ode = DiffEquation(1, 0, 5, 5, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
+ode_solver = ODESolver()
+methods_list = [Exact(), Euler(), ModEuler(), RungeKutta()]
 
-m0 = solver.solve(diff_eq, Exact())
-m1 = solver.solve(diff_eq, Euler())
-m2 = solver.solve(diff_eq, ModEuler())
-m3 = solver.solve(diff_eq, RungeKutta())
-
-# plot(m0, m1, m2, m3, diff_eq)
-
-ODESolverApp(diff_eq, m0, m1, m2, m3)
+ODESolverApp(ode, ode_solver, methods_list)
