@@ -1,4 +1,6 @@
 import math
+import sys
+import os
 import numpy as np
 
 import tkinter as tk
@@ -107,7 +109,7 @@ class MainWindow:
         root = tk.Tk()
         root.title("ODE Solver")
         root.resizable(width=False, height=False)
-        root.iconbitmap(default="favicon.ico")
+        root.iconbitmap(default=resource_path("favicon.ico"))
         root.geometry('1000x630')
 
         self.item = root
@@ -305,7 +307,7 @@ class PopUpWindow:
         plt.figure(figsize=(7, 6))
         plt.suptitle(title + "\n" + self.diff_eq.formula + "\n" + graph_data)
         this_manager = plt.get_current_fig_manager()
-        this_manager.window.wm_iconbitmap("favicon.ico")
+        this_manager.window.wm_iconbitmap(resource_path("favicon.ico"))
 
         plt.subplot(111)
         plt.xlabel("x")
@@ -345,6 +347,11 @@ def ode_func(x, y):
 def ode_exact_sol(x, x0, y0):
     c = y0*((math.e**x0)/x0) - (3/2)*(math.e**(2*x0))
     return (3/2)*x*math.e**x + c*(x/math.e**x)
+
+
+def resource_path(relative_path):
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 
 ode = DiffEquation(1, 0, 5, 5, ode_func, ode_exact_sol, "y' = 3xe^x - y(1 - 1/x)")
